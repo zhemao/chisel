@@ -52,4 +52,39 @@ class NuSMVBackendSuite extends TestSuite {
     () => Module(new MemoryExample))
     assertFile("NuSMVBackendSuite_MemoryExample_1.smv")
   }
+
+  @Test def testSubmodule() {
+    class Child extends Module {
+      val io = new Bundle {
+        val cin = Bool(INPUT)
+        val cout = Bool(OUTPUT)
+      }
+
+      io.cout := !io.cin
+    }
+    class Parent extends Module {
+      val NumChildren = 2
+
+      val io = new Bundle {
+        val pin = Bits(INPUT, NumChildren)
+        val pout = Bits(OUTPUT, NumChildren)
+      }
+
+      val couts = Vec.fill(NumChildren) { Bool() }
+
+      for (i <- 0 until NumChildren) {
+        val child = Module(new Child)
+        child.io.cin := io.pin(i)
+        couts(i) := child.io.cout
+      }
+
+      io.pout := couts.toBits
+    }
+
+    chiselMain(Array(
+      "--backend", "nusmv",
+      "--targetDir", dir.getPath.toString()),
+    () => Module(new Parent))
+    assertFile("NuSMVBackendSuite_Parent_1.smv")
+  }
 }

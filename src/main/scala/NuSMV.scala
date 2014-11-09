@@ -70,18 +70,42 @@ class NuSMVBackend extends Backend {
     }
   }
 
-  private def emitVarDecls(sb: StringBuilder, regs: Iterable[Reg]) {
+  private def emitType(typ: Node): String = {
+    /*val sType = "signed word [" + typ.needWidth + "]"
+    val uType = "unsigned word [" + typ.needWidth + "]"
+    val bType = "{TRUE, FALSE}"
+
+    typ match {
+      case _: SInt => sType
+      case _: Bool => bType
+      case _: Bits => uType
+      case _: LogicalOp => bType
+      case _: BinaryOp => emitType(typ.inputs(0))
+      case _: UnaryOp => emitType(typ.inputs(0))
+      case _: Mux => emitType(typ.inputs(1))
+      case memread: MemRead => emitType(memread.mem.data)
+      case lit: Literal => if (lit.signed) sType else uType
+    }*/
+    "unsigned word [" + typ.needWidth + "]"
+  }
+
+  private def emitVarDecls(
+      sb: StringBuilder,
+      regs: Iterable[Reg],
+      mems: Iterable[Mem[_]]) {
     sb.append("VAR\n")
     for (reg <- regs) {
-      val typname = reg.next match {
-        case sint: SInt => "signed word"
-        case _ => "unsigned word"
-      }
-      val width = reg.next.needWidth
-      sb.append("\t").append(reg.name).append(" : ")
-        .append(typname).append("[")
-        .append(reg.next.needWidth)
-        .append("];\n")
+      sb.append("\t").append(reg.name)
+        .append(" : ")
+        .append(emitType(reg.next))
+        .append(";\n")
+    }
+    for (mem <- mems) {
+      sb.append("\t").append(mem.name)
+        .append(" : array 0..").append(mem.n - 1)
+        .append(" of ")
+        .append(emitType(mem.data))
+        .append(";\n")
     }
   }
 
@@ -94,47 +118,44 @@ class NuSMVBackend extends Backend {
     }
   }
 
-  private def emitOp(sb: StringBuilder, op: Op) {
-    op.op match {
-      case "+" | "*" | "&" | "|" =>
-        sb.append(emitRef(op.inputs(0)))
-          .append(" ").append(op.op).append(" ")
-          .append(emitRef(op.inputs(1)))
-      case "##" => {
-        val sw = op.inputs(1).needWidth
-        sb.append("(").append(emitRef(op.inputs(0))).append(" << ")
-          .append(sw).append(") | ").append(emitRef(op.inputs(1)))
-      }
-      case "Mux" => {
-        val ref1 = emitRef(op.inputs(1))
-        val ref2 = emitRef(op.inputs(2))
-        sb.append("case ").append(emitRef(op.inputs(0)))
-          .append(" : ").append(emitRef(op.inputs(1)))
-          .append("; TRUE : ").append(emitRef(op.inputs(2)))
-          .append("; esac")
-      }
-      case s => println(s"Unmatched op: ${op.name} ${s}")
+  private def emitBinaryOp(op: String, a: Node, b: Node) = {
+    val realop = op match {
+      case "+" | "-" | "*" | "/" | "&" | "|" |
+           "<" | ">" | "<=" | ">=" => op
+      case "^" => "xor"
+      case "s<" => "<"
+      case "s<=" => "<="
+      case "##" => "::"
     }
+    emitRef(a) + " " + realop + " " + emitRef(b)
+  }
+
+  private def emitUnaryOp(op: String, x: Node):String = {
+    val realop = op match {
+      case "~" => op
+    }
+    realop + emitRef(x)
   }
 
   private def emitExtract(sb: StringBuilder, extract: Extract) {
-    val gotWidth = extract.inputs(0).needWidth()
-    if (gotWidth > 1) {
-      if (extract.inputs.length < 3) {
-        sb.append("(").append(emitRef(extract.inputs(0)))
-          .append(" >> ").append(emitRef(extract.inputs(1)))
-          .append(") & 1")
-      } else {
-        val hi = emitRef(extract.inputs(1))
-        val lo = emitRef(extract.inputs(2))
-        sb.append("(").append(emitRef(extract.inputs(0)))
-          .append(" >> ").append(lo)
-          .append(") & ((1 << (").append(hi).append(" - ").append(lo)
-          .append(" + 1)) - 1)")
-      }
-    } else {
-      sb.append(emitRef(extract.inputs(0)))
-    }
+    sb.append(emitRef(extract.inputs(0)))
+      .append("[").append(emitRef(extract.inputs(1)))
+      .append(":").append(emitRef(extract.inputs(2)))
+      .append("]")
+  }
+
+  private def emitMux(sb: StringBuilder, sel: Node, a: Node, b: Node) {
+    sb.append("case ").append(emitRef(sel))
+      .append(" : ").append(emitRef(a))
+      .append("; TRUE : ").append(emitRef(b))
+      .append("; esac")
+  }
+
+  private def emitMemRead(sb: StringBuilder, memread: MemRead) {
+    sb.append(memread.mem.name)
+      .append("[")
+      .append(emitRef(memread.inputs(0)))
+      .append("]")
   }
 
   private def emitDefs(sb: StringBuilder, defs: Iterable[Node]) {
@@ -142,17 +163,22 @@ class NuSMVBackend extends Backend {
     for (node <- defs) {
       sb.append("\t").append(node.name).append(" := ")
       node match {
-        case op: Op => {
-          emitOp(sb, op)
-        }
-        case extract: Extract => {
+        case op: BinaryOp =>
+          sb.append(emitBinaryOp(op.op, op.inputs(0), op.inputs(1)))
+        case op: LogicalOp =>
+          sb.append(emitBinaryOp(op.op, op.inputs(0), op.inputs(1)))
+        case op: UnaryOp =>
+          sb.append(emitUnaryOp(op.op, op.inputs(0)))
+        case mux: Mux =>
+          emitMux(sb, mux.inputs(0), mux.inputs(1), mux.inputs(2))
+        case extract: Extract =>
           emitExtract(sb, extract)
-        }
+        case memread: MemRead =>
+          emitMemRead(sb, memread)
+        case bits: Bits =>
+          sb.append(emitRef(bits.inputs(0)))
         case _ => {
           println(s"${node.name} ${node.getClass.getName}")
-          if (node.inputs.length == 1) {
-            sb.append(emitRef(node.inputs(0)))
-          }
         }
       }
       sb.append(";\n")
@@ -172,7 +198,7 @@ class NuSMVBackend extends Backend {
       }
     }
 
-    val ports = (outputs.unzip._1 ++ inputs.unzip._1 :+ "reset").toSet
+    val ports = (inputs.unzip._1 :+ "reset").toSet
 
     val moduleName = top.getClass.getSimpleName
 
@@ -180,15 +206,15 @@ class NuSMVBackend extends Backend {
       .append(inputs.unzip._1.mkString(", ")).append(")\n")
 
     val regs = new ArrayBuffer[Reg]
-    val mwrites = new ArrayBuffer[MemWrite]
+    val mems = new ArrayBuffer[Mem[_]]
     val defs = new ArrayBuffer[Node]
 
     for (node <- top.nodes) {
       node match {
         case reg: Reg =>
           regs += reg
-        case m: MemWrite =>
-          mwrites += m
+        case mem: Mem[_] =>
+          mems += mem
         case lit: Literal => ()
         case _ => if (!ports.contains(node.name)) {
           defs += node
@@ -196,7 +222,7 @@ class NuSMVBackend extends Backend {
       }
     }
 
-    emitVarDecls(sb, regs)
+    emitVarDecls(sb, regs, mems)
     emitUpdates(sb, regs)
     emitDefs(sb, defs)
 

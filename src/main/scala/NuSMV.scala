@@ -169,28 +169,29 @@ class NuSMVBackend extends Backend {
   }
 
   private def emitBinaryOp(op: String, a: Node, b: Node) = {
-    val (asigned, bsigned, realop) = op match {
-      case "+" | "-" | "*" | "/" | "%" | "&" | "|" |
-           "<" | ">" | "<=" | ">=" | "!=" => (false, false, op)
-      case "==" => (false, false, "=")
-      case "^" => (false, false, "xor")
-      case "s<" => (true, true, "<")
-      case "s<=" => (true, true, "<=")
-      case "s>>" => (true, false, ">>")
-      case "s*s" => (true, true, "*")
-      case "s/s" => (true, true, "/")
-      case "s%s" => (true, true, "%")
-      case "s*u" => (true, false, "*")
-      case "##" => (false, false, "::")
+    val (asigned, bsigned, logical, realop) = op match {
+      case "+" | "-" | "*" | "/" | "%" | "&" | "|" => (false, false, false, op)
+      case "<" | ">" | "<=" | ">=" | "!=" => (false, false, true, op)
+      case "==" => (false, false, true, "=")
+      case "^" => (false, false, false, "xor")
+      case "s<" => (true, true, true, "<")
+      case "s<=" => (true, true, true, "<=")
+      case "s>>" => (true, false, false, ">>")
+      case "s*s" => (true, true, false, "*")
+      case "s/s" => (true, true, false, "/")
+      case "s%s" => (true, true, false, "%")
+      case "s*u" => (true, false, false, "*")
+      case "##" => (false, false, false, "::")
       case _ => {
         ChiselError.warning(s"Unmatched operator ${op}")
-        (false, false, op)
+        (false, false, false, op)
       }
     }
     val aref = if (asigned) "signed(" + emitRef(a) + ")" else emitRef(a)
     val bref = if (bsigned) "signed(" + emitRef(b) + ")" else emitRef(b)
 
-    aref + " " + realop + " " + bref
+    val base = aref + " " + realop + " " + bref
+    if (logical) "word1(" + base + ")" else base
   }
 
   private def emitUnaryOp(op: String, x: Node):String = {
@@ -215,8 +216,8 @@ class NuSMVBackend extends Backend {
   }
 
   private def emitMux(sb: StringBuilder, sel: Node, a: Node, b: Node) {
-    sb.append("case ").append(emitRef(sel))
-      .append(" : ").append(emitRef(a))
+    sb.append("case bool(").append(emitRef(sel))
+      .append(") : ").append(emitRef(a))
       .append("; TRUE : ").append(emitRef(b))
       .append("; esac")
   }
@@ -368,12 +369,21 @@ class NuSMVBackend extends Backend {
     val sb = new StringBuilder()
     sb.append("MODULE main\nVAR\n    reset : {0, 1};\n")
 
+    val inputNames = new ArrayBuffer[String]
+    inputNames += "reset"
+
     for ((n, w) <- top.wires) {
       if (w.dir == INPUT) {
-        sb.append("    ").append(w.name).append(" : ")
+        sb.append("    ").append(n).append(" : ")
           .append(emitType(w)).append(";\n")
+        inputNames += n
       }
     }
+
+    sb.append("    top : ")
+      .append(top.moduleName).append("(")
+      .append(inputNames.mkString(", "))
+      .append(");\n")
 
     sb.toString()
   }

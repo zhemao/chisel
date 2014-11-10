@@ -87,4 +87,37 @@ class NuSMVBackendSuite extends TestSuite {
     () => Module(new Parent))
     assertFile("NuSMVBackendSuite_Parent_1.smv")
   }
+
+  @Test def testGCD() {
+    class GCD(w: Int) extends Module {
+      val io = new Bundle {
+        val a = UInt(INPUT, w)
+        val b = UInt(INPUT, w)
+        val c = UInt(OUTPUT, w)
+        val start = Bool(INPUT)
+        val done = Bool(OUTPUT)
+      }
+
+      val x = Reg(UInt(width = w))
+      val y = Reg(UInt(width = w))
+
+      when (io.start) {
+        x := io.a
+        y := io.b
+      } .elsewhen (x > y) {
+        x := x - y
+      } .elsewhen (y > x) {
+        y := y - x
+      }
+
+      io.done := (x === y)
+      io.c := x
+    }
+
+    chiselMain(Array(
+      "--backend", "nusmv",
+      "--targetDir", dir.getPath.toString()),
+    () => Module(new GCD(16)))
+    assertFile("NuSMVBackendSuite_GCD_1.smv")
+  }
 }

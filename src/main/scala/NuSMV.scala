@@ -170,7 +170,8 @@ class NuSMVBackend extends Backend {
 
   private def emitBinaryOp(op: String, a: Node, b: Node) = {
     val (asigned, bsigned, logical, realop) = op match {
-      case "+" | "-" | "*" | "/" | "%" | "&" | "|" => (false, false, false, op)
+      case "+" | "-" | "*" | "/" | "%" |
+           "&" | "|" | ">>" | "<<" => (false, false, false, op)
       case "<" | ">" | "<=" | ">=" | "!=" => (false, false, true, op)
       case "==" => (false, false, true, "=")
       case "^" => (false, false, false, "xor")

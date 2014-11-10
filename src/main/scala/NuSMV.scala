@@ -201,9 +201,16 @@ class NuSMVBackend extends Backend {
   }
 
   private def emitExtract(sb: StringBuilder, extract: Extract) {
+    val (hi, lo) = if (extract.inputs.length < 3) {
+      val ref = emitRef(extract.inputs(1))
+      (ref, ref)
+    } else {
+      (emitRef(extract.inputs(1)), emitRef(extract.inputs(2)))
+    }
+
     sb.append(emitRef(extract.inputs(0)))
-      .append("[").append(emitRef(extract.inputs(1)))
-      .append(":").append(emitRef(extract.inputs(2)))
+      .append("[").append(hi)
+      .append(":").append(lo)
       .append("]")
   }
 

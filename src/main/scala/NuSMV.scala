@@ -339,6 +339,19 @@ class NuSMVBackend extends Backend {
     }
   }
 
+  def emitMainModule(top: Module): String = {
+    val sb = new StringBuilder()
+    sb.append("MODULE main\nVAR\n\treset : {0, 1};\n")
+
+    for ((n, w) <- top.wires) {
+      if (w.dir == INPUT) {
+        sb.append("\t").append(w.name).append(" : ")
+          .append(emitType(w)).append(";\n")
+      }
+    }
+
+    sb.toString()
+  }
 
   def doCompile(top: Module, out: java.io.FileWriter, depth: Int): Unit = {
     /* *defs* maps Mod classes to Mod instances through
@@ -378,6 +391,7 @@ class NuSMVBackend extends Backend {
     }
     flushModules(out, defs, level);
     emitChildren(top, defs, out, depth);
+    out.append(emitMainModule(top))
   }
 
   override def elaborate(c: Module) {

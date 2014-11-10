@@ -247,9 +247,15 @@ class NuSMVBackend extends Backend {
           case memread: MemRead =>
             emitMemRead(sb, memread)
           case bits: Bits =>
-            sb.append(emitRef(bits.inputs(0)))
+            if (bits.inputs.length == 0) {
+              ChiselError.warning(s"Unconnected wire ${bits.name}")
+              sb.append("0")
+            } else {
+              sb.append(emitRef(bits.inputs(0)))
+            }
           case _ => {
-            println(s"${node.name} ${node.getClass.getName}")
+            ChiselError.warning(
+              s"Unmatched node ${node.name} ${node.getClass.getName}")
           }
         }
         sb.append(";\n")

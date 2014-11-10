@@ -162,23 +162,35 @@ class NuSMVBackend extends Backend {
       sb.append("ASSIGN\n")
 
       for (reg <- regs) {
-        sb.append("\tnext(").append(emitName(reg)).append(") := ")
+        sb.append("    next(").append(emitName(reg)).append(") := ")
           .append(emitRef(reg.next)).append(";\n")
       }
     }
   }
 
   private def emitBinaryOp(op: String, a: Node, b: Node) = {
-    val realop = op match {
-      case "+" | "-" | "*" | "/" | "&" | "|" |
-           "<" | ">" | "<=" | ">=" => op
-      case "^" => "xor"
-      case "s<" => "<"
-      case "s<=" => "<="
-      case "##" => "::"
-      case _ => ChiselError.warning(s"Unmatched operator ${op}")
+    val (asigned, bsigned, realop) = op match {
+      case "+" | "-" | "*" | "/" | "%" | "&" | "|" |
+           "<" | ">" | "<=" | ">=" | "!=" => (false, false, op)
+      case "==" => (false, false, "=")
+      case "^" => (false, false, "xor")
+      case "s<" => (true, true, "<")
+      case "s<=" => (true, true, "<=")
+      case "s>>" => (true, false, ">>")
+      case "s*s" => (true, true, "*")
+      case "s/s" => (true, true, "/")
+      case "s%s" => (true, true, "%")
+      case "s*u" => (true, false, "*")
+      case "##" => (false, false, "::")
+      case _ => {
+        ChiselError.warning(s"Unmatched operator ${op}")
+        (false, false, op)
+      }
     }
-    emitRef(a) + " " + realop + " " + emitRef(b)
+    val aref = if (asigned) "signed(" + emitRef(a) + ")" else emitRef(a)
+    val bref = if (bsigned) "signed(" + emitRef(b) + ")" else emitRef(b)
+
+    aref + " " + realop + " " + bref
   }
 
   private def emitUnaryOp(op: String, x: Node):String = {

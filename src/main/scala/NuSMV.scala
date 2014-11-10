@@ -136,13 +136,13 @@ class NuSMVBackend extends Backend {
     if (regs.size + mems.size + children.size > 0) {
       sb.append("VAR\n")
       for (reg <- regs) {
-        sb.append("\t").append(emitName(reg))
+        sb.append("    ").append(emitName(reg))
           .append(" : ")
           .append(emitType(reg.next))
           .append(";\n")
       }
       for (mem <- mems) {
-        sb.append("\t").append(emitName(mem))
+        sb.append("    ").append(emitName(mem))
           .append(" : array 0..").append(mem.n - 1)
           .append(" of ")
           .append(emitType(mem.data))
@@ -150,7 +150,7 @@ class NuSMVBackend extends Backend {
       }
 
       for (mod <- children) {
-        sb.append("\t").append(mod.name).append(" : ")
+        sb.append("    ").append(mod.name).append(" : ")
         emitComponent(sb, mod)
         sb.append(";\n")
       }
@@ -232,7 +232,7 @@ class NuSMVBackend extends Backend {
     if (defs.size > 0) {
       sb.append("DEFINE\n")
       for (node <- defs) {
-        sb.append("\t").append(emitName(node)).append(" := ")
+        sb.append("    ").append(emitName(node)).append(" := ")
         node match {
           case op: BinaryOp =>
             sb.append(emitBinaryOp(op.op, op.inputs(0), op.inputs(1)))
@@ -360,11 +360,11 @@ class NuSMVBackend extends Backend {
 
   def emitMainModule(top: Module): String = {
     val sb = new StringBuilder()
-    sb.append("MODULE main\nVAR\n\treset : {0, 1};\n")
+    sb.append("MODULE main\nVAR\n    reset : {0, 1};\n")
 
     for ((n, w) <- top.wires) {
       if (w.dir == INPUT) {
-        sb.append("\t").append(w.name).append(" : ")
+        sb.append("    ").append(w.name).append(" : ")
           .append(emitType(w)).append(";\n")
       }
     }

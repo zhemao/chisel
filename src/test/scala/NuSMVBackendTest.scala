@@ -114,10 +114,21 @@ class NuSMVBackendSuite extends TestSuite {
       io.c := x
     }
 
-    chiselMain(Array(
+    class GCDChecker(c: GCD) extends ModelChecker(c) {
+      poke(c.io.start, 1)
+      poke(c.io.a, 6)
+      poke(c.io.b, 4)
+      step(1)
+      poke(c.io.start, 0)
+
+      spec("AF (top.io_c = 0ud16_2)")
+    }
+
+    chiselMain.modelCheck(Array(
       "--backend", "nusmv",
       "--targetDir", dir.getPath.toString()),
-    () => Module(new GCD(16)))
+      () => Module(new GCD(16)),
+      (c: GCD) => new GCDChecker(c))
     assertFile("NuSMVBackendSuite_GCD_1.smv")
   }
 }

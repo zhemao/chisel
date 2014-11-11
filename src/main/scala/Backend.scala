@@ -58,6 +58,11 @@ trait FileSystemUtilities {
     val baseDir = ensureDir(Driver.targetDir)
     new java.io.FileWriter(baseDir + name)
   }
+
+  def appendOutputFile(name: String): java.io.FileWriter = {
+    val baseDir = ensureDir(Driver.targetDir)
+    new java.io.FileWriter(baseDir + name, true)
+  }
 }
 
 abstract class Backend extends FileSystemUtilities{

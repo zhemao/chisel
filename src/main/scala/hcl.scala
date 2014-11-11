@@ -67,6 +67,9 @@ object chiselMain {
 
   def run[T <: Module] (args: Array[String], gen: () => T, ftester: T => Tester[T]): T =
     Driver(args, gen, ftester, false)
+
+  def modelCheck[T <: Module](args: Array[String], gen: () => T, mchecker: T => ModelChecker[T]): T =
+    Driver.modelCheck(args, gen, mchecker)
 }
 
 //Is this antiquated?

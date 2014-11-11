@@ -54,6 +54,15 @@ object Driver extends FileSystemUtilities{
     mod
   }
 
+  def modelCheck[T <: Module](args: Array[String], gen: () => T,
+                         mchecker_gen: T => ModelChecker[T],
+                         wrapped: Boolean = true): T = {
+    val mod = apply(args, gen, wrapped)
+    val mchecker = mchecker_gen(mod)
+    mchecker.emit()
+    mod
+  }
+
   private def executeUnwrapped[T <: Module](gen: () => T): T = {
     if (!chiselConfigMode.isEmpty && !chiselConfigClassName.isEmpty) {
       val name = appendString(chiselProjectName,chiselConfigClassName)

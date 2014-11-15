@@ -157,13 +157,36 @@ class NuSMVBackend extends Backend {
     }
   }
 
-  private def emitUpdates(sb: StringBuilder, regs: Iterable[Reg]) {
-    if (regs.size > 0) {
+  private def emitMemWrite(sb: StringBuilder, mwrite: MemWrite) {
+    val memref = emitRef(mwrite.mem)
+    val enref = emitRef(mwrite.cond)
+    val addrref = emitRef(mwrite.addr)
+    val dataref = emitRef(mwrite.data)
+
+
+    for (i <- 0 until mwrite.mem.n) {
+      val accessref = memref + "[" + i + "]"
+      sb.append("    next(").append(accessref).append(") := case\n")
+        .append("        bool(").append(enref).append(") & toint(")
+        .append(addrref).append(") = ").append(i).append(" : ")
+        .append(dataref).append(";\n")
+        .append("        TRUE : ").append(accessref).append(";\n")
+        .append("    esac;\n")
+    }
+  }
+
+  private def emitUpdates(
+      sb: StringBuilder, regs: Iterable[Reg], memwrites: Iterable[MemWrite]) {
+    if (regs.size + memwrites.size > 0) {
       sb.append("ASSIGN\n")
 
       for (reg <- regs) {
         sb.append("    next(").append(emitName(reg)).append(") := ")
           .append(emitRef(reg.next)).append(";\n")
+      }
+
+      for (mwrite <- memwrites) {
+        emitMemWrite(sb, mwrite)
       }
     }
   }
@@ -290,6 +313,7 @@ class NuSMVBackend extends Backend {
     val regs = new ArrayBuffer[Reg]
     val mems = new ArrayBuffer[Mem[_]]
     val defs = new ArrayBuffer[Node]
+    val memwrites = new ArrayBuffer[MemWrite]
 
     for (node <- top.nodes) {
       node match {
@@ -297,6 +321,8 @@ class NuSMVBackend extends Backend {
           regs += reg
         case mem: Mem[_] =>
           mems += mem
+        case memwrite: MemWrite =>
+          memwrites += memwrite
         case lit: Literal => ()
         case _ => if (!ports.contains(node.name)) {
           defs += node
@@ -305,7 +331,7 @@ class NuSMVBackend extends Backend {
     }
 
     emitVarDecls(sb, regs, mems, top.children)
-    emitUpdates(sb, regs)
+    emitUpdates(sb, regs, memwrites)
     emitDefs(sb, defs)
 
     componentStack.pop()

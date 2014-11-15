@@ -38,18 +38,39 @@ class NuSMVBackendSuite extends TestSuite {
       val io = new Bundle {
         val readAddr = UInt(INPUT, 2)
         val readData = UInt(OUTPUT, 8)
+
+        val writeAddr = UInt(INPUT, 2)
+        val writeData = UInt(INPUT, 8)
+        val writeEn = Bool(INPUT)
       }
 
       val readAddrReg = Reg(next = io.readAddr)
       val mem = Mem(UInt(width = 8), 4)
 
       io.readData := mem(readAddrReg)
+
+      when (io.writeEn) {
+        mem(io.writeAddr) := io.writeData
+      }
     }
 
-    chiselMain(Array(
+    class MemoryChecker(c: MemoryExample) extends ModelChecker(c) {
+      poke(c.io.writeAddr, 1)
+      poke(c.io.writeData, 2)
+      poke(c.io.writeEn, 1)
+      step(1)
+      poke(c.io.writeEn, 0)
+      step(1)
+      poke(c.io.readAddr, 1)
+
+      spec("AF (toint(io_readAddr) = 1 & toint(top.io_readData) = 2)")
+    }
+
+    chiselMain.modelCheck(Array(
       "--backend", "nusmv",
       "--targetDir", dir.getPath.toString()),
-    () => Module(new MemoryExample))
+      () => Module(new MemoryExample),
+      (c: MemoryExample) => new MemoryChecker(c))
     assertFile("NuSMVBackendSuite_MemoryExample_1.smv")
   }
 

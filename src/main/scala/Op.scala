@@ -441,7 +441,7 @@ abstract class Op extends Node {
       if (List("|", "&", "^", "+", "-").contains(op)) {
         if (inputs(0).widthW != widthW) inputs(0) = inputs(0).matchWidth(widthW)
         if (inputs(1).widthW != widthW) inputs(1) = inputs(1).matchWidth(widthW)
-      } else if (List("==", "!=", "<", "<=").contains(op)) {
+      } else if (List("==", "!=", "<", "<=", "s<", "s<=").contains(op)) {
         val w = max(inputs(0).needWidth(), inputs(1).needWidth())
         if (inputs(0).needWidth() != w) inputs(0) = inputs(0).matchWidth(Width(w))
         if (inputs(1).needWidth() != w) inputs(1) = inputs(1).matchWidth(Width(w))

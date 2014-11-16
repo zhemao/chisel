@@ -246,10 +246,23 @@ class NuSMVBackend extends Backend {
       .append("; esac")
   }
 
+  private def emitArrayRead(sb: StringBuilder, array: Node, addr: Node) {
+    sb.append(emitRef(array))
+      .append("[")
+      .append(emitRef(addr))
+      .append("]")
+  }
+
   private def emitMemRead(sb: StringBuilder, memread: MemRead) {
     sb.append(emitName(memread.mem))
       .append("[")
       .append(emitRef(memread.inputs(0)))
+      .append("]")
+  }
+
+  private def emitROMLiteral(sb: StringBuilder, romdata: ROMData) {
+    sb.append("[")
+      .append(romdata.lits.map(n => emitRef(n)).mkString(", "))
       .append("]")
   }
 
@@ -270,7 +283,7 @@ class NuSMVBackend extends Backend {
           case extract: Extract =>
             emitExtract(sb, extract)
           case memread: MemRead =>
-            emitMemRead(sb, memread)
+            emitArrayRead(sb, memread.mem, memread.addr)
           case bits: Bits =>
             if (bits.inputs.length == 0) {
               ChiselError.warning(s"Unconnected wire ${bits.name}")
@@ -278,6 +291,10 @@ class NuSMVBackend extends Backend {
             } else {
               sb.append(emitRef(bits.inputs(0)))
             }
+          case romdata: ROMData =>
+            emitROMLiteral(sb, romdata)
+          case romread: ROMRead =>
+            emitArrayRead(sb, romread.rom, romread.addr)
           case _ => {
             ChiselError.warning(
               s"Unmatched node ${node.name} ${node.getClass.getName}")

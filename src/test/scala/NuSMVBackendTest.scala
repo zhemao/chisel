@@ -152,4 +152,32 @@ class NuSMVBackendSuite extends TestSuite {
       (c: GCD) => new GCDChecker(c))
     assertFile("NuSMVBackendSuite_GCD_1.smv")
   }
+
+  @Test def testROM {
+    class ROMExample extends Module {
+      val io = new Bundle {
+        val readAddr = UInt(INPUT, 3)
+        val readData = UInt(OUTPUT, 8)
+      }
+
+      val rom = Vec.tabulate(8)(i => UInt(i << 2, 8))
+      io.readData := rom(io.readAddr)
+    }
+
+    class ROMChecker(c: ROMExample) extends ModelChecker(c) {
+      for (i <- 0 until 8) {
+        poke(c.io.readAddr, i)
+        step(1)
+      }
+
+      spec("AG ((toint(io_readAddr) = 1) -> (toint(top.io_readData) = 4))")
+    }
+
+    chiselMain.modelCheck(Array(
+      "--backend", "nusmv",
+      "--targetDir", dir.getPath.toString()),
+      () => Module(new ROMExample),
+      (c: ROMExample) => new ROMChecker(c))
+    assertFile("NuSMVBackendSuite_ROMExample_1.smv")
+  }
 }

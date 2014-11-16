@@ -225,12 +225,22 @@ class NuSMVBackend extends Backend {
     realop + emitRef(x)
   }
 
+  private def emitIntConst(node: Node): String = {
+    node match {
+      case lit: Literal => lit.value.toString
+      case _ => {
+        ChiselError.error(s"Expected constant but got ${node}")
+        ""
+      }
+    }
+  }
+
   private def emitExtract(sb: StringBuilder, extract: Extract) {
     val (hi, lo) = if (extract.inputs.length < 3) {
-      val ref = emitRef(extract.inputs(1))
+      val ref = emitIntConst(extract.inputs(1))
       (ref, ref)
     } else {
-      (emitRef(extract.inputs(1)), emitRef(extract.inputs(2)))
+      (emitIntConst(extract.inputs(1)), emitIntConst(extract.inputs(2)))
     }
 
     sb.append(emitRef(extract.inputs(0)))

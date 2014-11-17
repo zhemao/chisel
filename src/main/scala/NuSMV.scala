@@ -100,6 +100,10 @@ class NuSMVBackend extends Backend {
     "unsigned word [" + typ.needWidth + "]"
   }
 
+  private def emitType(mem: Mem[_]): String = {
+    "array 0.." + (mem.n - 1) + " of unsigned word [" + mem.needWidth + "]"
+  }
+
   private def emitComponent(sb: StringBuilder, mod: Module) {
     sb.append(mod.moduleName).append("(reset")
     for ((n, w) <- mod.wires) {
@@ -136,9 +140,7 @@ class NuSMVBackend extends Backend {
       }
       for (mem <- mems) {
         sb.append("    ").append(emitName(mem))
-          .append(" : array 0..").append(mem.n - 1)
-          .append(" of ")
-          .append(emitType(mem.data))
+          .append(" : ").append(emitType(mem))
           .append(";\n")
       }
 

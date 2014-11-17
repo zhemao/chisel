@@ -2,6 +2,10 @@ import Chisel._
 import org.junit.Test
 
 class NuSMVBackendSuite extends TestSuite {
+  val nusmvArgs = Array(
+      "--backend", "nusmv",
+      "--targetDir", dir.getPath.toString())
+
   @Test def testSimple() {
     class SimpleExample extends Module {
       val io = new Bundle {
@@ -26,10 +30,7 @@ class NuSMVBackendSuite extends TestSuite {
       io.d := y > x
     }
 
-    chiselMain(Array(
-      "--backend", "nusmv",
-      "--targetDir", dir.getPath.toString()),
-    () => Module(new SimpleExample))
+    chiselMain(nusmvArgs, () => Module(new SimpleExample))
     assertFile("NuSMVBackendSuite_SimpleExample_1.smv")
   }
 
@@ -66,9 +67,7 @@ class NuSMVBackendSuite extends TestSuite {
       spec("AF (toint(io_readAddr) = 1 & toint(top.io_readData) = 2)")
     }
 
-    chiselMain.modelCheck(Array(
-      "--backend", "nusmv",
-      "--targetDir", dir.getPath.toString()),
+    chiselMain.modelCheck(nusmvArgs,
       () => Module(new MemoryExample),
       (c: MemoryExample) => new MemoryChecker(c))
     assertFile("NuSMVBackendSuite_MemoryExample_1.smv")
@@ -102,10 +101,7 @@ class NuSMVBackendSuite extends TestSuite {
       io.pout := couts.toBits
     }
 
-    chiselMain(Array(
-      "--backend", "nusmv",
-      "--targetDir", dir.getPath.toString()),
-    () => Module(new Parent))
+    chiselMain(nusmvArgs, () => Module(new Parent))
     assertFile("NuSMVBackendSuite_Parent_1.smv")
   }
 
@@ -145,9 +141,7 @@ class NuSMVBackendSuite extends TestSuite {
       spec("AF (top.io_c = 0ud16_2)")
     }
 
-    chiselMain.modelCheck(Array(
-      "--backend", "nusmv",
-      "--targetDir", dir.getPath.toString()),
+    chiselMain.modelCheck(nusmvArgs,
       () => Module(new GCD(16)),
       (c: GCD) => new GCDChecker(c))
     assertFile("NuSMVBackendSuite_GCD_1.smv")
@@ -173,9 +167,7 @@ class NuSMVBackendSuite extends TestSuite {
       spec("AG ((toint(io_readAddr) = 1) -> (toint(top.io_readData) = 4))")
     }
 
-    chiselMain.modelCheck(Array(
-      "--backend", "nusmv",
-      "--targetDir", dir.getPath.toString()),
+    chiselMain.modelCheck(nusmvArgs,
       () => Module(new ROMExample),
       (c: ROMExample) => new ROMChecker(c))
     assertFile("NuSMVBackendSuite_ROMExample_1.smv")

@@ -115,7 +115,7 @@ class NuSMVBackend extends Backend {
           case io: Bits =>
             if (io.dir == INPUT) {
               if (io.inputs.length == 0) {
-                sb.append(", 0")
+                sb.append(", ").append(emitLit(0, io.needWidth))
               } else if (io.inputs.length > 1) {
                 ChiselError.warning("Too many connections to " + emitRef(io))
               } else {

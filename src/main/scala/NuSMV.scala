@@ -191,16 +191,43 @@ class NuSMVBackend extends Backend {
     }
   }
 
+  private def emitShift(op: BinaryOp): String = {
+    val (signed, left) = op.op match {
+      case "<<" => (false, true)
+      case ">>" => (false, false)
+      case "s<<" => (true, true)
+      case "s>>" => (true, false)
+    }
+
+    val a = emitRef(op.inputs(0))
+    val b = emitRef(op.inputs(1))
+    val w = op.needWidth
+    val w0 = op.inputs(0).needWidth
+
+    val reala = if (signed) "signed(" + a + ")" else a
+
+    if (left) {
+      if (w > w0)
+        "resize(" + reala + ", " + w + ") << " + b
+      else
+        reala + " << " + b
+    } else {
+      if (w < w0)
+        "resize(" + reala + " >> " + b + ", " + w + ")"
+      else
+        reala + " >> " + b
+    }
+  }
+
   private def emitBinaryOp(op: String, a: Node, b: Node) = {
     val (asigned, bsigned, logical, realop) = op match {
       case "+" | "-" | "*" | "/" | "%" |
-           "&" | "|" | ">>" | "<<" => (false, false, false, op)
+           "&" | "|" => (false, false, false, op)
       case "<" | ">" | "<=" | ">=" | "!=" => (false, false, true, op)
       case "==" => (false, false, true, "=")
       case "^" => (false, false, false, "xor")
       case "s<" => (true, true, true, "<")
       case "s<=" => (true, true, true, "<=")
-      case "s>>" => (true, false, false, ">>")
       case "s*s" => (true, true, false, "*")
       case "s/s" => (true, true, false, "/")
       case "s%s" => (true, true, false, "%")
@@ -283,7 +310,12 @@ class NuSMVBackend extends Backend {
         sb.append("    ").append(emitName(node)).append(" := ")
         node match {
           case op: BinaryOp =>
-            sb.append(emitBinaryOp(op.op, op.inputs(0), op.inputs(1)))
+            op.op match {
+              case "<<" | ">>" | "s<<" | "s>>" =>
+                sb.append(emitShift(op))
+              case _ =>
+                sb.append(emitBinaryOp(op.op, op.inputs(0), op.inputs(1)))
+            }
           case op: LogicalOp =>
             sb.append(emitBinaryOp(op.op, op.inputs(0), op.inputs(1)))
           case op: UnaryOp =>

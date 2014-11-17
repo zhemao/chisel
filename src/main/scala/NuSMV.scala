@@ -89,21 +89,14 @@ class NuSMVBackend extends Backend {
   }
 
   private def emitType(typ: Node): String = {
-    /*val sType = "signed word [" + typ.needWidth + "]"
-    val uType = "unsigned word [" + typ.needWidth + "]"
-    val bType = "{TRUE, FALSE}"
-
-    typ match {
-      case _: SInt => sType
-      case _: Bool => bType
-      case _: Bits => uType
-      case _: LogicalOp => bType
-      case _: BinaryOp => emitType(typ.inputs(0))
-      case _: UnaryOp => emitType(typ.inputs(0))
-      case _: Mux => emitType(typ.inputs(1))
-      case memread: MemRead => emitType(memread.mem.data)
-      case lit: Literal => if (lit.signed) sType else uType
-    }*/
+    val w = typ.widthW
+    if (!w.isKnown) {
+      if (typ.line != null)
+        ChiselError.error("Cannot determine width of " + typ.toString +
+          " created at " + typ.line)
+      else
+        ChiselError.error("Cannot determine width of " + typ.toString)
+    }
     "unsigned word [" + typ.needWidth + "]"
   }
 

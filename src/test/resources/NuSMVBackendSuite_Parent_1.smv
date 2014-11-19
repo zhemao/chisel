@@ -1,0 +1,23 @@
+MODULE NuSMVBackendSuite_Child_1(reset, io_cin)
+DEFINE
+    io_cout := T0;
+    T0 := io_cin xor 0h1_1;
+
+MODULE NuSMVBackendSuite_Parent_1(reset, io_pin)
+VAR
+    NuSMVBackendSuite_Child_1_0 : NuSMVBackendSuite_Child_1(reset, T2);
+    NuSMVBackendSuite_Child_1_1 : NuSMVBackendSuite_Child_1(reset, T3);
+DEFINE
+    T3 := io_pin[1:1];
+    T2 := io_pin[0:0];
+    io_pout := T0;
+    T0 := T1;
+    T1 := couts_1 :: couts_0;
+    couts_0 := NuSMVBackendSuite_Child_1_0.io_cout;
+    couts_1 := NuSMVBackendSuite_Child_1_1.io_cout;
+
+MODULE main
+VAR
+    reset : unsigned word [1];
+    io_pin : unsigned word [2];
+    top : NuSMVBackendSuite_Parent_1(reset, io_pin);

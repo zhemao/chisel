@@ -1,0 +1,32 @@
+MODULE NuSMVBackendSuite_ROMExample_1(reset, io_readAddr)
+DEFINE
+    io_readData := T0;
+    T0 := T1[io_readAddr];
+    T1 := [0h8_0, 0h8_4, 0h8_8, 0h8_c, 0h8_10, 0h8_14, 0h8_18, 0h8_1c];
+
+MODULE main
+VAR
+    reset : unsigned word [1];
+    io_readAddr : unsigned word [3];
+    top : NuSMVBackendSuite_ROMExample_1(reset, io_readAddr);
+    cycle : 0..9;
+ASSIGN
+    init(cycle) := 0;
+    next(cycle) := case
+        cycle < 9 : cycle + 1;
+        TRUE : cycle;
+    esac;
+    init(reset) := 0b1_1;
+    next(reset) := 0b1_0;
+    next(io_readAddr) := case
+        cycle = 2 : 0h3_2;
+        cycle = 5 : 0h3_5;
+        cycle = 4 : 0h3_4;
+        cycle = 7 : 0h3_7;
+        cycle = 1 : 0h3_1;
+        cycle = 3 : 0h3_3;
+        cycle = 6 : 0h3_6;
+        cycle = 0 : 0h3_0;
+        TRUE : io_readAddr;
+    esac;
+SPEC AG ((toint(io_readAddr) = 1) -> (toint(top.io_readData) = 4));

@@ -1,0 +1,47 @@
+MODULE NuSMVBackendSuite_SimpleExample_1(reset, io_a)
+VAR
+    y : unsigned word [5];
+    x : unsigned word [5];
+    w : unsigned word [1];
+    z : unsigned word [6];
+ASSIGN
+    next(y) := T10;
+    next(x) := io_a;
+    next(w) := T15;
+    next(z) := T6;
+DEFINE
+    io_d := T0;
+    T0 := word1(signed(T3) < signed(T9));
+    T9 := T14 :: y;
+    T10 := case bool(reset) : 0h5_0; TRUE : T1; esac;
+    T1 := y + T11;
+    T11 := T12 :: T2;
+    T2 := 0h2_1;
+    T12 := case bool(T13) : 0h3_7; TRUE : 0h3_0; esac;
+    T13 := T2[1:1];
+    T14 := y[4:4];
+    T3 := T4;
+    T4 := 0h1_0 :: x;
+    io_c := w;
+    T15 := case bool(reset) : 0h1_0; TRUE : T5; esac;
+    T5 := w xor 0h1_1;
+    io_b := z;
+    T6 := T7;
+    T7 := 0h1_0 :: T8;
+    T8 := x | y;
+
+MODULE main
+VAR
+    reset : unsigned word [1];
+    io_a : unsigned word [5];
+    top : NuSMVBackendSuite_SimpleExample_1(reset, io_a);
+    cycle : 0..1;
+ASSIGN
+    init(cycle) := 0;
+    next(cycle) := case
+        cycle < 1 : cycle + 1;
+        TRUE : cycle;
+    esac;
+    init(reset) := 0b1_1;
+    next(reset) := 0b1_0;
+SPEC AG(toint(top.io_c) = 0 -> AF(toint(top.io_c) = 1));

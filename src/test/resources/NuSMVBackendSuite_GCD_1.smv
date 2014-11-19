@@ -1,0 +1,55 @@
+MODULE NuSMVBackendSuite_GCD_1(reset, io_a, io_b, io_start)
+VAR
+    y : unsigned word [16];
+    x : unsigned word [16];
+ASSIGN
+    next(y) := T1;
+    next(x) := T9;
+DEFINE
+    io_done := T0;
+    T0 := word1(x = y);
+    T1 := case bool(T4) : T3; TRUE : T2; esac;
+    T2 := case bool(io_start) : io_b; TRUE : y; esac;
+    T3 := y - x;
+    T4 := T6 & T5;
+    T5 := word1(x < y);
+    T6 := T7 xor 0h1_1;
+    T7 := io_start | T8;
+    T8 := word1(y < x);
+    T9 := case bool(T12) : T11; TRUE : T10; esac;
+    T10 := case bool(io_start) : io_a; TRUE : x; esac;
+    T11 := x - y;
+    T12 := T13 & T8;
+    T13 := io_start xor 0h1_1;
+    io_c := x;
+
+MODULE main
+VAR
+    reset : unsigned word [1];
+    io_a : unsigned word [16];
+    io_b : unsigned word [16];
+    io_start : unsigned word [1];
+    top : NuSMVBackendSuite_GCD_1(reset, io_a, io_b, io_start);
+    cycle : 0..2;
+ASSIGN
+    init(cycle) := 0;
+    next(cycle) := case
+        cycle < 2 : cycle + 1;
+        TRUE : cycle;
+    esac;
+    init(reset) := 0b1_1;
+    next(reset) := 0b1_0;
+    next(io_start) := case
+        cycle = 1 : 0h1_0;
+        cycle = 0 : 0h1_1;
+        TRUE : io_start;
+    esac;
+    next(io_b) := case
+        cycle = 0 : 0h16_4;
+        TRUE : io_b;
+    esac;
+    next(io_a) := case
+        cycle = 0 : 0h16_6;
+        TRUE : io_a;
+    esac;
+SPEC AF (top.io_c = 0ud16_2);

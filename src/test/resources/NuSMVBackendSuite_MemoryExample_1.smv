@@ -1,0 +1,71 @@
+MODULE NuSMVBackendSuite_MemoryExample_1(reset, io_readAddr, io_writeAddr, io_writeData_first, io_writeData_second, io_writeEn)
+VAR
+    readAddrReg : unsigned word [2];
+    mem : array 0..3 of unsigned word [16];
+ASSIGN
+    next(readAddrReg) := io_readAddr;
+    next(mem[0]) := case
+        bool(io_writeEn) & toint(io_writeAddr) = 0 : T3;
+        TRUE : mem[0];
+    esac;
+    next(mem[1]) := case
+        bool(io_writeEn) & toint(io_writeAddr) = 1 : T3;
+        TRUE : mem[1];
+    esac;
+    next(mem[2]) := case
+        bool(io_writeEn) & toint(io_writeAddr) = 2 : T3;
+        TRUE : mem[2];
+    esac;
+    next(mem[3]) := case
+        bool(io_writeEn) & toint(io_writeAddr) = 3 : T3;
+        TRUE : mem[3];
+    esac;
+DEFINE
+    io_readData_second := T0;
+    T0 := T1[7:0];
+    T1 := mem[readAddrReg];
+    T3 := T4;
+    T4 := io_writeData_first :: io_writeData_second;
+    io_readData_first := T5;
+    T5 := T1[15:8];
+
+MODULE main
+VAR
+    reset : unsigned word [1];
+    io_readAddr : unsigned word [2];
+    io_writeAddr : unsigned word [2];
+    io_writeData_first : unsigned word [8];
+    io_writeData_second : unsigned word [8];
+    io_writeEn : unsigned word [1];
+    top : NuSMVBackendSuite_MemoryExample_1(reset, io_readAddr, io_writeAddr, io_writeData_first, io_writeData_second, io_writeEn);
+    cycle : 0..3;
+ASSIGN
+    init(cycle) := 0;
+    next(cycle) := case
+        cycle < 3 : cycle + 1;
+        TRUE : cycle;
+    esac;
+    init(reset) := 0b1_1;
+    next(reset) := 0b1_0;
+    next(io_writeData_second) := case
+        cycle = 0 : 0h8_3;
+        TRUE : io_writeData_second;
+    esac;
+    next(io_writeEn) := case
+        cycle = 1 : 0h1_0;
+        cycle = 0 : 0h1_1;
+        TRUE : io_writeEn;
+    esac;
+    next(io_writeData_first) := case
+        cycle = 0 : 0h8_2;
+        TRUE : io_writeData_first;
+    esac;
+    next(io_writeAddr) := case
+        cycle = 0 : 0h2_1;
+        TRUE : io_writeAddr;
+    esac;
+    next(io_readAddr) := case
+        cycle = 2 : 0h2_1;
+        TRUE : io_readAddr;
+    esac;
+SPEC AF (toint(io_readAddr) = 1 & toint(top.io_readData_first) = 2);

@@ -448,7 +448,7 @@ class NuSMVBackend extends Backend {
 
   def emitMainModule(top: Module): String = {
     val sb = new StringBuilder()
-    sb.append("MODULE main\nVAR\n    reset : {0, 1};\n")
+    sb.append("MODULE main\nVAR\n    reset : unsigned word [1];\n")
 
     val inputNames = new ArrayBuffer[String]
     inputNames += "reset"

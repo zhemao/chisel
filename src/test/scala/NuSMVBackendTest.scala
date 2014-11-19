@@ -30,7 +30,12 @@ class NuSMVBackendSuite extends TestSuite {
       io.d := y > x
     }
 
-    chiselMain(nusmvArgs, () => Module(new SimpleExample))
+    class SimpleChecker(c: SimpleExample) extends ModelChecker(c) {
+      spec("AG(toint(top.io_c) = 0 -> AF(toint(top.io_c) = 1))")
+    }
+
+    chiselMain.modelCheck(nusmvArgs, () => Module(new SimpleExample),
+      (c: SimpleExample) => new SimpleChecker(c))
     assertFile("NuSMVBackendSuite_SimpleExample_1.smv")
   }
 

@@ -43,6 +43,8 @@ class ModelChecker[T <: Module](val c: T) extends FileSystemUtilities {
       .append("        cycle < ").append(lastCycle).append(" : cycle + 1;\n")
       .append("        TRUE : cycle;\n")
       .append("    esac;\n")
+      .append("    init(reset) := 0b1_1;\n")
+      .append("    next(reset) := 0b1_0;\n")
 
     for ((signalName, pokes) <- pokeMap) {
       val width = widthMap(signalName)

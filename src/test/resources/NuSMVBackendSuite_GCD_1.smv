@@ -3,7 +3,9 @@ VAR
     y : unsigned word [16];
     x : unsigned word [16];
 ASSIGN
+    init(y) := 0h16_0;
     next(y) := T1;
+    init(x) := 0h16_0;
     next(x) := T9;
 DEFINE
     io_done := T0;

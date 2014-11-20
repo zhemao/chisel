@@ -161,6 +161,8 @@ class NuSMVBackend extends Backend {
 
     for (i <- 0 until mwrite.mem.n) {
       val accessref = memref + "[" + i + "]"
+      sb.append("    init(").append(accessref).append(") := ")
+        .append(emitLit(0, mwrite.mem.needWidth)).append(";\n")
       sb.append("    next(").append(accessref).append(") := case\n")
         .append("        bool(").append(enref).append(") & toint(")
         .append(addrref).append(") = ").append(i).append(" : ")
@@ -176,6 +178,8 @@ class NuSMVBackend extends Backend {
       sb.append("ASSIGN\n")
 
       for (reg <- regs) {
+        sb.append("    init(").append(emitName(reg)).append(") := ")
+          .append(emitLit(0, reg.next.needWidth)).append(";\n")
         sb.append("    next(").append(emitName(reg)).append(") := ")
           .append(emitRef(reg.next)).append(";\n")
       }

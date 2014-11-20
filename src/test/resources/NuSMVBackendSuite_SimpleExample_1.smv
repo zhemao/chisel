@@ -5,9 +5,13 @@ VAR
     w : unsigned word [1];
     z : unsigned word [6];
 ASSIGN
+    init(y) := 0h5_0;
     next(y) := T10;
+    init(x) := 0h5_0;
     next(x) := io_a;
+    init(w) := 0h1_0;
     next(w) := T15;
+    init(z) := 0h6_0;
     next(z) := T6;
 DEFINE
     io_d := T0;

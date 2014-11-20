@@ -3,19 +3,24 @@ VAR
     readAddrReg : unsigned word [2];
     mem : array 0..3 of unsigned word [16];
 ASSIGN
+    init(readAddrReg) := 0h2_0;
     next(readAddrReg) := io_readAddr;
+    init(mem[0]) := 0h16_0;
     next(mem[0]) := case
         bool(io_writeEn) & toint(io_writeAddr) = 0 : T3;
         TRUE : mem[0];
     esac;
+    init(mem[1]) := 0h16_0;
     next(mem[1]) := case
         bool(io_writeEn) & toint(io_writeAddr) = 1 : T3;
         TRUE : mem[1];
     esac;
+    init(mem[2]) := 0h16_0;
     next(mem[2]) := case
         bool(io_writeEn) & toint(io_writeAddr) = 2 : T3;
         TRUE : mem[2];
     esac;
+    init(mem[3]) := 0h16_0;
     next(mem[3]) := case
         bool(io_writeEn) & toint(io_writeAddr) = 3 : T3;
         TRUE : mem[3];
